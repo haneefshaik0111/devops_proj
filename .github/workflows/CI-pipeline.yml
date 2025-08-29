@@ -51,6 +51,7 @@ jobs:
           path: lint-report.txt
 
       - name : dependency
+        run: |
           npm audit --audit-level=high --json > npm-audit-report.json
 
       - name: vul
