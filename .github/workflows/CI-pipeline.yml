@@ -38,4 +38,19 @@ jobs:
           name: test-results-artifact
           path: test-results/results.xml
 
+      - name: run code quality using eslink(jave script framework)
+        run: |
+          set -o pipefail
+          npx eslint . --ext .js --exit-on-fatal-error -f stylish | tee lint-report.txt
+
+      - name: code quality publish
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: code-quality-artifact
+          path: lint-report.txt
+          
+          
+      
+
         
