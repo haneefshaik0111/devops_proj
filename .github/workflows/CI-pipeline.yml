@@ -1,0 +1,32 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
+
+jobs:
+  build_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code from dev branch
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      # 3. Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # 4. Run tests
+      - name: Run tests
+        run: |
+          mkdir -p test-results
+          npm test -- --reporter mocha-junit-reporter --reporter-options mochaFile=./test-results/results.xml
