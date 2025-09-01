@@ -79,7 +79,7 @@ jobs:
       - name: logging into docker hub
         run:  echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
 
-      - name: tag docker image
+      - name: tag docker image to hub
         run: |
           docker tag my-node-app ${{ secrets.DOCKER_HUB_USERNAME }}/my-node-app:dev-latest
           docker tag my-node-app ${{ secrets.DOCKER_HUB_USERNAME }}/my-node-app:dev-${{github.sha}}
