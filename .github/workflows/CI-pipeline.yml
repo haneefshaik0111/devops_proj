@@ -31,67 +31,71 @@ jobs:
           mkdir -p test-results
           npm test -- --reporter mocha-junit-reporter --reporter-options mochaFile=./test-results/results.xml
 
-      - name: test results pubish
+      - name: Test results publish
         uses: actions/upload-artifact@v4.6.2
-        if:  always()
+        if: always()
         with:
           name: test-results-artifact
           path: test-results/results.xml
 
-      - name: run code quality using eslink(jave script framework)
+      - name: Run code quality using eslint (JavaScript framework)
         run: |
           set -o pipefail
           npx eslint . --ext .js --exit-on-fatal-error -f stylish | tee lint-report.txt
 
-      - name: code quality publish
+      - name: Code quality publish
         if: always()
         uses: actions/upload-artifact@v4.6.2
         with:
           name: code-quality-artifact
           path: lint-report.txt
 
-      - name : dependency
+      - name: Dependency check
         run: |
           npm audit --audit-level=high --json > npm-audit-report.json
 
-      - name: vul
+      - name: Vulnerability report
         if: always()
         uses: actions/upload-artifact@v4.6.2
         with:
           name: code-dependency-artifact
           path: npm-audit-report.json
 
-      -  name: build dockerfiles
-         run: docker build -t my-node-app .
+      - name: Build docker image
+        run: docker build -t my-node-app .
 
-      -  name: Install Trivy
-         run: |
+      - name: Install Trivy
+        run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh
           sudo mv ./bin/trivy /usr/local/bin/
           trivy --version
 
-      -  name: scan docker image
-         run:  trivy image --exit-code 1 --severity HIGH,CRITICAL my-node-app
+      - name: Scan docker image
+        run: trivy image --exit-code 1 --severity HIGH,CRITICAL my-node-app
 
-      -  name: run test inside container
-         run:  docker run --rm my-node-app npm test
+      - name: Run test inside container
+        run: docker run --rm my-node-app npm test
 
-      - name: logging into docker hub
-        run:  echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+      - name: Logging into Docker Hub
+        run: echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
 
-      - name: tag docker image to hub
+      - name: Tag docker image
         run: |
           docker tag my-node-app ${{ secrets.DOCKER_HUB_USERNAME }}/my-node-app:dev-latest
-          docker tag my-node-app ${{ secrets.DOCKER_HUB_USERNAME }}/my-node-app:dev-${{github.sha}}
-      - name: docker push image
+          docker tag my-node-app ${{ secrets.DOCKER_HUB_USERNAME }}/my-node-app:dev-${{ github.sha }}
+
+      - name: Push docker image
         run: |
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/my-node-app:dev-latest
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/my-node-app:dev-${{github.sha}}
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/my-node-app:dev-${{ github.sha }}
 
-  
-         
-      
-    
-      
+  deploy:
+    needs: build_test
+    runs-on: ubuntu-latest
 
-        
+    steps:
+      - name: Deploy to Render
+        run: |
+          curl -X POST "https://api.render.com/v1/services/srv-d2qop5qdbo4c73cdmhhg/deploys" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Accept: application/json"
